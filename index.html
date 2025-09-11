@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>WebXR AR Vertical Board with Fallback</title>
+    <title>WebXR AR Vertical Board</title>
     <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/webxr/ARButton.js"></script>
   </head>
@@ -10,6 +10,7 @@
     <script type="module">
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.module.js';
       import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/webxr/ARButton.js';
+      import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/loaders/GLTFLoader.js';
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.01, 20);
@@ -20,63 +21,79 @@
       renderer.xr.enabled = true;
       document.body.appendChild(renderer.domElement);
 
-      // تابلو / مکعب سه‌بعدی
-      const geometry = new THREE.BoxGeometry(0.4, 0.3, 0.03);
-      const material = new THREE.MeshBasicMaterial({ color: 0x0088ff });
-      const board = new THREE.Mesh(geometry, material);
-      scene.add(board);
-
       // نور ساده برای دسکتاپ
       const light = new THREE.HemisphereLight(0xffffff, 0x444444);
       light.position.set(0,1,0);
       scene.add(light);
 
-      // بررسی پشتیبانی WebXR
-      if (navigator.xr) {
-        // ARButton برای موبایل
-        document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
+      // بارگذاری مدل GLB تابلو
+      const loader = new GLTFLoader();
+      let board = null;
 
-        let hitTestSource = null;
-        let localSpace = null;
+      loader.load('tavlo.glb', (gltf) => {
+        board = gltf.scene;
+        board.scale.set(0.5,0.5,0.5); // اندازه تابلو
+        board.visible = false;
+        scene.add(board);
+      });
 
-        renderer.xr.addEventListener("sessionstart", async () => {
-          const session = renderer.xr.getSession();
-          const viewerSpace = await session.requestReferenceSpace("viewer");
-          hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
-          localSpace = await session.requestReferenceSpace("local");
-        });
+      function isARSupported() {
+        return navigator.xr && navigator.xr.isSessionSupported('immersive-ar');
+      }
 
-        renderer.setAnimationLoop((timestamp, frame) => {
-          if (frame && hitTestSource) {
-            const hitTestResults = frame.getHitTestResults(hitTestSource);
-            if (hitTestResults.length > 0) {
-              const pose = hitTestResults[0].getPose(localSpace);
-              if (pose) {
-                board.visible = true;
-                board.position.set(
-                  pose.transform.position.x,
-                  pose.transform.position.y + 0.5,
-                  pose.transform.position.z
-                );
-                board.rotation.set(0, camera.rotation.y, 0);
+      isARSupported().then((supported) => {
+        if(supported) {
+          // ARButton فقط وقتی موبایل سازگار هست
+          document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
+
+          let hitTestSource = null;
+          let localSpace = null;
+
+          renderer.xr.addEventListener("sessionstart", async () => {
+            const session = renderer.xr.getSession();
+            const viewerSpace = await session.requestReferenceSpace("viewer");
+            hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
+            localSpace = await session.requestReferenceSpace("local");
+          });
+
+          renderer.setAnimationLoop((timestamp, frame) => {
+            if(frame && hitTestSource && board) {
+              const hitTestResults = frame.getHitTestResults(hitTestSource);
+              if(hitTestResults.length > 0) {
+                const pose = hitTestResults[0].getPose(localSpace);
+                if(pose) {
+                  board.visible = true;
+
+                  // موقعیت روی دیوار (سطح عمودی)
+                  board.position.set(
+                    pose.transform.position.x,
+                    pose.transform.position.y + 1.0, // ارتفاع دلخواه تابلو روی دیوار
+                    pose.transform.position.z
+                  );
+
+                  // همیشه عمودی و رو به کاربر
+                  board.rotation.set(-Math.PI/2, camera.rotation.y, 0);
+                }
               }
             }
-          }
-          renderer.render(scene, camera);
-        });
+            renderer.render(scene, camera);
+          });
 
-      } else {
-        // fallback دسکتاپ: تابلو همیشه وسط صفحه و چرخشی
-        board.position.set(0,0,0);
-        board.rotation.set(0,0,0);
-        function animateDesktop() {
-          board.rotation.y += 0.01;
-          board.rotation.x += 0.005;
-          renderer.render(scene, camera);
-          requestAnimationFrame(animateDesktop);
+        } else {
+          // fallback دسکتاپ
+          if(board) board.visible = true;
+          board.position.set(0,0,0);
+          function animateDesktop() {
+            if(board) {
+              board.rotation.y += 0.01;
+              board.rotation.x += 0.005;
+            }
+            renderer.render(scene, camera);
+            requestAnimationFrame(animateDesktop);
+          }
+          animateDesktop();
         }
-        animateDesktop();
-      }
+      });
 
       window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;

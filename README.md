@@ -1,70 +1,70 @@
-# سیر تکامل اپلیکیشن: بازنویسی از جاوااسکریپت خام (Vanilla) به ری‌اکت مدرن و Three.js
+# App-Evolution: Von Vanilla JavaScript zum modernen React & Three.js Rebuild
 
-این سند مسیر تحول و جهش معماری اپلیکیشن **«شبیه‌ساز و سفارشی‌ساز تابلوهای تبلیغاتی سه‌بعدی»** را تشریح می‌کند. در این گزارش، نسخه قدیمی (نمونه اولیه مبتنی بر قابلیت‌های پیش‌فرض مرورگر) با نسخه مدرن، فول‌استک، پرسرعت و مبتنی بر React و کدهای بومی Three.js مقایسه شده است.
+Dieses Dokument beschreibt den evolutionären Sprung der Anwendung **"3D Signage Customizer & Simulator"** (3D-Schildkonfigurator & Simulator). Es vergleicht das alte, browsernative Mockup mit der modernen, leistungsstarken Full-Stack-Anwendung auf Basis von React und nativem Three.js.
 
 ---
 
-## 📊 نگاهی اجمالی به مقایسه تکاملی
+## 📊 Evolutionärer Vergleich auf einen Blick
 
-| ابعاد معماری | پیاده‌سازی قدیمی (گذشته) | پیاده‌سازی مدرن (فعلی) |
+| Architektur-Dimension | Alte Implementierung (Vorher) | Moderne Implementierung (Aktuell) |
 | :--- | :--- | :--- |
-| **فریم‌ورک و زبان** | HTML5 خام، جاوااسکریپت ES6 و CSS معمولی | **React 18**، **TypeScript 5** و ابزارآلات **Vite** |
-| **رویکرد رندرینگ سه‌بعدی** | کامپوننت‌های سفارشی وب `<model-viewer>` گوگل | پایپ‌لاین بومی و سطح پایین **Three.js WebGL 2.0 Scene** |
-| **کنترل متریال و شیدر** | ویژگی‌های سطح بالا در تگ `<model-viewer>` | اتصال کامل متریال‌های رویه‌ای PBR و رزولوشن سفارشی مپ بافت‌ها (Normal، Physical Roughness، Metallics) |
-| **محیط نورپردازی** | تصویر پیش-فرض نگاشت محیطی و نورپردازی ثابت | بازتاب‌های واقع‌گرایانه استودیویی HDR با (`RGBELoader`)، سایه‌های نرم پویا (`PCFSoftShadowMap`) و نورهای نقطه‌ای/موضعی فعال |
-| **فضای سه‌بعدی واکنش‌گرا** | ویژگی aspect-ratio در CSS و تغییر سایز پیش‌فرض کامپوننت | الگوریتم انطباق مقیاس با Bounding-box به همراه ResizeObserver برای تضمین **اشغال دقیق ۸۰٪ فضای عمودی/افقی محیط کار** |
-| **مکانیزم خطایابی / جایگزین** | نمایش طولانی‌مدت آیکون لودینگ در صورت خطای بارگذاری فایل | **سازنده رویه‌ای اشکال سه‌بعدی (Procedural 3D Shape Constructor)** برای رندر هندسه‌های جایگزین سفارشی (مستطیل، کپسول، سپر، لوزی، شش‌ضلعی) |
-| **خروجی گرفتن از زوایای مختلف** | چرخاندن دستی دوربین و گرفتن اسکرین‌شات از Canvas در صفحه | دیسپچر رویداد **`three:capture-all-angles`** برای دانلود خودکار تصاویر PNG شفاف با کنتراست بالا |
-| **پارادایم استایل‌دهی** | استایل‌شیت‌های سفارشی و خارجی ثابت | **موتور کمکی Tailwind CSS** به همراه فیلترهای پس‌زمینه (backdrop)، درخشش‌های نئونی جذاب و Keyframeهای سفارشی CSS |
+| **Framework & Sprache** | Vanilla HTML5, ES6 JavaScript und reines CSS | **React 18**, **TypeScript 5** und **Vite** Tooling |
+| **3D-Rendering-Ansatz** | Google `<model-viewer>` Custom Web Components | Low-Level **Natives Three.js WebGL 2.0 Scene Pipeline** |
+| **Material- & Shader-Kontrolle** | High-Level-Eigenschaften auf `<model-viewer>` | Vollständige prozedurale PBR-Materialbindung & benutzerdefinierte Textur-Map-Auflösung (Normal, Physical Roughness, Metallics) |
+| **Beleuchtungsumgebung** | Basis-Preset für Umgebungskarten-Bilder, feste Beleuchtung | Vollständig aktive Studio-HDR-Reflektionen (`RGBELoader`), dynamische Soft-Shadow-Maps (`PCFSoftShadowMap`), aktive Point-/Spotlights |
+| **Responsiver 3D-Raum** | CSS-Seitenverhältnisse (aspect-ratio), Standard-Größenänderung der Webkomponente | Bounding-Box-Skalierungsalgorithmus mit fluidem ResizeObserver, der eine exakte **80% vertikale/horizontale Workspace-Belegung** garantiert |
+| **Ausfallsicherheit / Fallback** | Unendlicher Lade-Spinner bei Fehlern beim Laden von Dateien | **Prozeduraler 3D-Formen-Konstruktor**, der benutzerdefinierte Geometrie-Fallbacks rendert (Rechtecke, Kapseln, Schilde, Rauten, Sechsecke) |
+| **Multi-Winkel-Export** | Manuelle Kamera-Orbits, Ausgabe von Canvas-Screenshots auf der Seite | **`three:capture-all-angles`** Event-Dispatcher, der automatische Downloads von kontrastreichen, transparenten PNGs ausführt |
+| **Styling-Paradigma** | Feste externe benutzerdefinierte Stylesheets | **Tailwind CSS Utility Engine** mit Backdrop-Filtern, lebendigen Neon-Glows und benutzerdefinierten CSS-Keyframes |
 
 ---
 
-## 🔍 بررسی عمیق: تحلیل کدبیس قدیمی (نسخه قبلی)
+## 🔍 Deep-Dive: Analyse der alten Codebasis (Vorher)
 
-مدل معماری قبلی یک سفارشی‌ساز تک‌صفحه‌ای و استاتیک بود که بر پایه عناصر بومی و ساختاری مرورگر بنا شده بود.
+Das vorherige Architekturmodell war ein statischer Single-View-Customizer, der auf deklarativen, nativen Browserelementen aufbaute.
 
-### ۱. انتخاب‌های تکنولوژیکی و کتابخانه‌ها
-* **Google `<model-viewer>` و `<model-viewer-effects>`**: استفاده از تگ‌های ساختاری HTML برای جاسازی و نمایش یک مدل `.glb` واحد. این ابزار لایه‌های پس‌پردازش بلوم (bloom post-processing) را با استفاده از تگ‌های داخلی `<effect-composer>` یکپارچه می‌کرد.
-* **ES-Module-Shims و Import Maps**: اتکا به پلی‌فیل‌های دریافتی از CDN (`https://ga.jspm.io/npm:es-module-shims@1.7.1/...`) جهت پشتیبانی از ماژول‌های ES در مرورگرهای قدیمی.
-* **FontAwesome CDN**: دریافت آیکون‌های وکتور خام از طریق cdnjs برای طراحی آیکون‌های کنترلی.
-* **متغیرهای CSS خام (Vanilla)**: اعمال متغیرهای `:root` در CSS برای تغییر دستی رنگ‌های شاخص و وضعیت‌های لودینگ با استفاده از سلکتورهای هاردکد شده.
+### 1. Technologieauswahl & Bibliotheken
+* **Google `<model-viewer>` & `<model-viewer-effects>`**: Nutzte deklarative HTML-Tags, um ein einzelnes `.glb`-Modell einzubetten und anzuzeigen. Einfache Post-Processing-Bloom-Layer wurden über innere deklarative `<effect-composer>`-Tags integriert.
+* **ES-Module-Shims & Import Maps**: Setzte auf über CDN geladene Polyfills (`https://ga.jspm.io/npm:es-module-shims@1.7.1/...`), um ES-Module in älteren Webbrowsern zu unterstützen.
+* **FontAwesome CDN**: Lädt rohe Vektor-Icons über cdnjs, um die Steuerungselemente visuell zu gestalten.
+* **Vanilla CSS-Variablen**: Verwendete CSS-`:root`-Variablen, um Akzentfarben und Ladezustände manuell über fest codierte Selektoren umzuschalten.
 
-### ۲. جریان رندرینگ و حلقه رویدادها (Event Loop)
-* **اتصال متریال‌ها**: وابستگی به دانلود دارایی‌های دیجیتال از راه دور که حاوی متریال‌های سخت JSON (`materials-2.json`) بودند. این معماری مش‌های استاندارد داخل تگ `<model-viewer>` را از طریق تغییرات برنامه‌نویسی‌شده ویژگی‌ها مدیریت می‌کرد.
-* **مسیریابی مبتنی بر هش (Hash-Based Routing)**: گوش دادن به تغییرات `window.location.hash` برای نمایش یا پنهان‌سازی پنل‌ها (`#builder`) با استفاده از دستور ساده `display: flex/none`.
-* **کنترل‌های تعاملی**: راه‌اندازی حلقه‌های جاوااسکریپت سراسری و امری برای اتصال لیسنرهای رویداد (`addEventListener`). این بخش به صورت برنامه‌نویسی‌شده تگ‌های خام `HTMLDivElement` (دایره‌های انتخاب رنگ) را تولید و به DOM تزریق می‌کرد.
-* **منطق گرفتن اسنپ‌شات**: تغییر دستی ویژگی `.cameraOrbit` در تگ `<model-viewer>` بین ۴ مختصات پیش-فرض در تابع `captureViews()`. استفاده از `.toBlob()` برای تولید بلاب‌های محلی و نمایش آن‌ها در یک کاروسل DOM که در صفحات موبایل به مختصات لمسی هاردکد شده متکی بود.
-
----
-
-## 🚀 بررسی عمیق: تحلیل معماری مدرن (نسخه فعلی)
-
-نسخه فعلی معماری قدیمی را به طور کامل بازنویسی کرده و انتزاع‌های عمومی وب را با یک ساختار درختی از کامپوننت‌های ری‌اکت با کارایی بالا و سیستم تایپ‌سیفتی (Type Safety) سخت‌گیرانه جایگزین کرده است.
-
-### ۱. هماهنگی ری‌اکت و تایپ‌اسکریپت
-* **معماری ماژولار**: تفکیک وظایف به بخش‌های شفاف و مستقل از هم:
-    * `App.tsx` (کنترل‌کننده ریشه صفحه، سازمان‌دهنده داشبورد و کامپایلر محیط).
-    * `ThreeCanvas.tsx` (بخش اختصاصی چرخه حیات رندرینگ WebGL).
-    * `Sidebar.tsx` (بخش سفارشی و واکنش‌گرای انتخاب‌های کاربر همراه با مراحل انیمیشنی کشویی).
-    * `materialsConfig.ts` و `modelsList.ts` (متاداده‌های ساختاری با تایپ‌های کاملاً مشخص).
-* **یکپارچگی وضعیت و محدودیت‌ها**: مدیریت از طریق اینترفیس `CustomizerState`. این بخش وضعیت گزینه‌ها (نورپردازی لوله‌های نئون، هماهنگی رنگ آکریلیک، تغییر رنگ‌های فعال LED) را به صورت آنی بین فرم‌های سایدبار و محیط WebGL همگام‌سازی می‌کند.
-* **بارگذاری تنبل (Lazy Loading)**: به تعویق انداختن لود موتور رندرینگ سنگین WebGL از طریق `lazy` و `Suspense` ری‌اکت تا زمانی که کاربر یک مدل را انتخاب کند؛ این امر موجب بهینه‌سازی حجم بارگذاری اولیه صفحه می‌شود.
-
-### ۲. پایپ‌لاین گرافیکی پرسرعت Three.js
-* **محیط‌های سفارشی**: بارگذاری صحنه‌های واقعی شهری HDR از طریق `RGBELoader` (`studio_small_09_1k.hdr`) با نگاشت انعکاس کروی پیرامونی (equirectangular)، که جزئیات درخشان و منعکسی به لبه‌های برنجی و کرومی تابلوها می‌بخشد.
-* **متریال‌های PBR و شیدر پانج (Puncture Shading)**: بارگذاری و تکرار مپ‌های بافت سفارشی PBR (دیفیوز، نرمال، زبری فیزیکی، متالنس) برای جلاهای سفارشی:
-    * *آینه‌ای (Mirror)*: فلزات با انعکاس بالا.
-    * *پودری (Powder-coated)*: زبری مات و نقطه‌نقطه.
-    * *برس‌خورده (Brushed)*: خطوط نوری مداری یک‌جهته.
-    * *پانچ (Punch)*: صفحات سوراخ‌دار با ماسک رویه‌ای که از مپ‌های شفافیت فیزیکی با مقدار سفارشی `alphaCutoff` استفاده می‌کنند.
-* **انعکاس اتمسفریک کف و نورپردازی**: ترسیم یک صفحه آسفالت خیس فیزیکی با پارامترهای دقیق سایه‌اندازی و موجودیت‌های نوری فیزیکی آنی. این ویژگی به صورت پویا نور پس‌زمینه بدنه تابلو و تشعشعات لوله نئون را به سمت زاویه دید دوربین منعکس می‌کند.
-* **جایگزین‌های هندسی پویا (Dynamic Geometric Fallbacks)**: اگر یک مدل GLB مفقود شده یا لود نشود، `ThreeCanvas` به طور خودکار اشکال سه‌بعدی برجسته و نرمی (مستطیل‌های گرد، لوزی، سپر، بیضی و غیره) را بر اساس مسیرهای اسپلاین بزیر (bezier spline) سفارشی می‌سازد تا تجربه کاربری دچار وقفه نشود.
-* **کپچر همگام‌سازی‌شده وکتور اسنپ‌شات**: به محض شناسایی رویداد `three:capture-all-angles`، کانوس به طور موقت محیط پس‌زمینه فعال را غیرفعال کرده و مقیاس نورپردازی را تنظیم می‌کند. سپس به صورت برنامه‌نویسی‌شده در مختصات قطبی مختلف می‌چرخد تا ۴ دانلود خودکار تصویر PNG شفاف با کنتراست بالا را آغاز کند.
+### 2. Rendering-Flow & Event-Loop
+* **Material-Bindungen**: Hing vom Download externer Assets ab, die starre Material-JSONs (`materials-2.json`) enthielten. Standard-Meshes innerhalb von `<model-viewer>` wurden durch programmatische Attributanpassungen manipuliert.
+* **Hash-Basiertes Routing**: Lauschte auf Änderungen von `window.location.hash`, um Panels (`#builder`) über eine einfache `display: flex/none`-Anweisung ein- oder auszublenden.
+* **Interaktive Steuerung**: Richtete globale, imperative JavaScript-Schleifen ein, um Event-Listener (`addEventListener`) zu binden. Rohe `HTMLDivElement`-Tags (Farbkreis-Auswähler) wurden programmatisch generiert und in das DOM injiziert.
+* **Snapshot-Logik**: Mutierte die Eigenschaft `.cameraOrbit` von `<model-viewer>` manuell über 4 vordefinierte Koordinaten innerhalb von `captureViews()`. Verwendete `.toBlob()`, um lokale Blobs zu erzeugen, und gab diese in einer DOM-Karussell-Liste aus, die auf Mobilgeräten auf fest codierten Touch-Koordinaten basierte.
 
 ---
 
-## 💎 چرا این تکامل اهمیت دارد؟ بیانیه ارزش
+## 🚀 Deep-Dive: Moderne Architektur-Analyse (Aktuell)
 
-۱.  **سفارشی‌سازی بدون اصطکاک**: گذار از ۱ مدل هاردکد شده به **۸ قالب پیش-فرض و دست‌چین شده برای بدنه تابلو** به کسب‌وکارها اجازه می‌دهد تا یک خط تولید کامل از تابلوهای معماری را به صورت آنی پیش‌نمایش کنند.
-۲.  **اصالت بصری**: ارتقا از رندرینگ پایه‌ای `<model-viewer>` به **شیدرهای بومی PBR، انعکاس‌های HDR و کف آسفالت خیس محیطی**، شبیه‌سازی‌هایی با وفاداری بالا تولید می‌کند که دقیقاً با طراحی‌های فیزیکی تابلوها در دنیای واقعی مطابقت دارند.
-۳.  **پایداری در سطح سازمانی**: معرفی **اشکال هندسی جایگزین رویه‌ای سه‌بعدی** به این معنی است که مشکلات اتصال به سرور یا مفقود شدن فایل‌ها هرگز باعث فریز شدن یا قفل کردن رابط کاربری کاربر نخواهد شد.
+Die aktuelle Iteration stellt eine komplette Neuentwicklung der alten Architektur dar. Allgemeine Web-Abstraktionen wurden durch eine hochperformante React-Komponenten-Hierarchie mit strikter Typensicherheit ersetzt.
+
+### 1. Das Zusammenspiel von React & TypeScript
+* **Modulare Architektur**: Isolierung der Zuständigkeiten in klare, unabhängige Bausteine:
+    * `App.tsx` (Zentraler View-Controller, Dashboard-Organizer und Umgebungs-Compiler).
+    * `ThreeCanvas.tsx` (Der dedizierte Kontext für den Lebenszyklus der WebGL-Szene).
+    * `Sidebar.tsx` (Der benutzerdefinierte, responsive Optionswähler mit animierten Sliding-Menüs).
+    * `materialsConfig.ts` & `modelsList.ts` (Streng typisierte strukturelle Metadaten).
+* **Zustandsintegrität & Validierung**: Gesteuert durch das `CustomizerState`-Interface. Es synchronisiert die Optionszustände (Neonröhren-Beleuchtung, Acrylfarbton-Anpassung, aktive LED-Farbüberschreibungen) in Echtzeit zwischen den Sidebar-Formularen und der WebGL-Szene.
+* **Lazy Loading**: Verzögert das Laden der rechenintensiven WebGL-Rendering-Engine via React `lazy` und `Suspense`, bis der Benutzer tatsächlich ein Modell auswählt. Dies optimiert das Ladezeit-Budget der initialen Seite drastisch.
+
+### 2. Hochperformante Three.js Grafik-Pipeline
+* **Benutzerdefinierte Umgebungen**: Lädt realistische urbane HDR-Szenen via `RGBELoader` (`studio_small_09_1k.hdr`) mit äquirektangulärer sphärischer Reflexionsabbildung (Equirectangular Mapping), wodurch Chrom- und Messingkanten lebendige, spiegelnde Details erhalten.
+* **PBR-Materialien & Puncture-Shading**: Lädt und kachelt benutzerdefinierte PBR-Texturkarten (Diffuse, Normal, Physical Roughness, Metalness) für individuelle Oberflächen-Finishes:
+    * *Spiegelnd (Mirror)*: Hochreflektierende Metalle.
+    * *Pulverbeschichtet (Powder-coated)*: Gesprenkelte, matte Rauheit.
+    * *Gebürstet (Brushed)*: Unidirektionale, orbitale Lichtstreifen.
+    * *Perforiert (Punch)*: Prozedural maskierte Lochbleche unter Verwendung physischer Transparenzkarten mit benutzerdefiniertem Masken-Wert (`alphaCutoff`).
+* **Atmosphärische Bodenreflexion & Beleuchtung**: Erzeugt eine physische, nass wirkende Asphalt-Bodenfläche mit präzisen Parametern für den Schattenwurf und physischen Echtzeit-Lichtquellen. Dies reflektiert das Leuchten der Schildrückseite und die Emissionen der Neonröhren dynamisch zurück in den Kamerasucher.
+* **Dynamische geometrische Fallbacks**: Falls ein GLB-Modell fehlt oder nicht geladen werden kann, baut `ThreeCanvas` automatisch glatte, extrudierte 3D-Formen (abgerundete Rechtecke, Rauten, Schilde, Ellipsen usw.) basierend auf benutzerdefinierten Bezier-Spline-Pfaden auf, um eine nahtlose Benutzererfahrung zu gewährleisten.
+* **Synchronisierte Snapshot-Vektorerfassung**: Sobald das Event `three:capture-all-angles` registriert wird, deaktiviert das Canvas vorübergehend die aktive Hintergrundumgebung und skaliert die Beleuchtung. Es rotiert programmatisch durch verschiedene Polarkoordinaten, um 4 automatische Downloads von kontrastreichen, transparenten PNGs auszulösen.
+
+---
+
+## 💎 Warum diese Evolution wichtig ist: Ein Werteversprechen
+
+1. **Reibungslose Anpassung**: Der Wechsel von einem einzigen, fest codierten Modell zu **8 sorgfältig kuratierten Gehäuse-Presets** ermöglicht es Unternehmen, eine ganze Produktlinie von Architekturschildern sofort in der Vorschau anzuzeigen.
+2. **Visuelle Authentizität**: Der Sprung vom einfachen Rendering des `<model-viewer>` zu **nativen PBR-Shadern, HDR-Reflektionen und ambienten, nassen Asphaltböden** liefert High-Fidelity-Simulationen, die realen physischen Schilddesigns exakt entsprechen.
+3. **Enterprise-Ready Zuverlässigkeit**: Die Einführung von **prozeduralen 3D-Geometrie-Fallbacks** bedeutet, dass Server-Verbindungsprobleme oder fehlende Dateien niemals die Benutzeroberfläche des Kunden einfrieren lassen.
